@@ -97,6 +97,12 @@ LaserScanMatcher::LaserScanMatcher(ros::NodeHandle nh, ros::NodeHandle nh_privat
       "pose_with_covariance_stamped", 5);
   }
 
+  if (publish_odom_)
+  {
+    odom_publisher_ = nh_.advertise<nav_msgs::Odometry>(
+      "odom_lsm",5);
+  }
+
   // *** subscribers
 
   if (use_cloud_input_)
@@ -210,6 +216,9 @@ void LaserScanMatcher::initParams()
     publish_pose_with_covariance_ = false;
   if (!nh_private_.getParam ("publish_pose_with_covariance_stamped", publish_pose_with_covariance_stamped_))
     publish_pose_with_covariance_stamped_ = false;
+
+  if (!nh_private_.getParam ("publish_odom", publish_odom_))
+    publish_odom_ = true;
 
   if (!nh_private_.getParam("position_covariance", position_covariance_))
   {
@@ -522,7 +531,7 @@ void LaserScanMatcher::processScan(LDP& curr_ldp_scan, const ros::Time& time)
       yaw_cov = gsl_matrix_get(output_.cov_x_m, 2, 2);
 
       // rotate xy covariance from the keyframe into odom frame
-      auto rotation = getLaserRotation(f2b_kf_);
+      auto rotation = getLaserRotation(keyframe_base_in_fixed_);
       xy_cov = rotation * xy_cov * rotation.transpose();
     }
     else {
@@ -604,6 +613,16 @@ void LaserScanMatcher::processScan(LDP& curr_ldp_scan, const ros::Time& time)
     meas_keyframe_base_offset.setIdentity();
     ROS_WARN("Error in scan matching");
   }
+
+  if (publish_odom_)
+    {
+      nav_msgs::Odometry::Ptr odom_msg_;
+      odom_msg_ = boost::make_shared<nav_msgs::Odometry>();
+      odom_msg_->header.stamp = time;
+      odom_msg_->header.frame_id = fixed_frame_;
+      tf::poseTFToMsg(f2b_, odom_msg_->pose.pose);
+      odom_publisher_.publish(odom_msg_);
+    }
 
   // **** swap old and new
 
@@ -859,7 +878,7 @@ void LaserScanMatcher::createTfFromXYTheta(
 }
 
 Eigen::Matrix2f LaserScanMatcher::getLaserRotation(const tf::Transform& odom_pose) const {
-  tf::Transform laser_in_fixed = odom_pose * laser_to_base_;
+  tf::Transform laser_in_fixed = odom_pose * laser_from_base_;
   tf::Matrix3x3 fixed_from_laser_rot(laser_in_fixed.getRotation());
   double r,p,y;
   fixed_from_laser_rot.getRPY(r, p, y);

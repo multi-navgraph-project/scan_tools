@@ -92,6 +92,7 @@ class LaserScanMatcher
     tf::Transform laser_from_base_; // static, cached
 
     ros::Publisher  pose_publisher_;
+    ros::Publisher  odom_publisher_;
     ros::Publisher  pose_stamped_publisher_;
     ros::Publisher  pose_with_covariance_publisher_;
     ros::Publisher  pose_with_covariance_stamped_publisher_;
@@ -104,6 +105,7 @@ class LaserScanMatcher
     double cloud_range_max_;
     double cloud_res_;
     bool publish_tf_;
+    bool publish_odom_; //publish odom from tf
     bool publish_pose_;
     bool publish_pose_with_covariance_;
     bool publish_pose_stamped_;
