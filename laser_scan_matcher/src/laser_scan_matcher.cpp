@@ -620,7 +620,7 @@ void LaserScanMatcher::processScan(LDP& curr_ldp_scan, const ros::Time& time)
       odom_msg_ = boost::make_shared<nav_msgs::Odometry>();
       odom_msg_->header.stamp = time;
       odom_msg_->header.frame_id = fixed_frame_;
-      tf::poseTFToMsg(f2b_, odom_msg_->pose.pose);
+      tf::poseTFToMsg(last_base_in_fixed_, odom_msg_->pose.pose);
       odom_publisher_.publish(odom_msg_);
     }
 
